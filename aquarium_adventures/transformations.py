@@ -2,10 +2,12 @@ import polars as pl
 from aquarium_adventures.base import BaseAquariumAnalyzer
 
 class AquariumTransformer(BaseAquariumAnalyzer):
+    STANDARD_TEMPERATURE = 26.0  
     
     def __init__(self, tank_info_df_fish_species_split=None):
-        pass
-    
+        self.tank_info_df_fish_species_split = tank_info_df_fish_species_split
+        
+        
     def analyze_data(self, sensors_df: pl.DataFrame) -> pl.DataFrame:
         pass
     
@@ -22,3 +24,27 @@ class AquariumTransformer(BaseAquariumAnalyzer):
         """
         avg_ph = df.group_by("tank_id").agg(pl.col("pH").mean().alias("avg_pH_per_tank"))
         return df.join(avg_ph, on="tank_id") 
+    
+    def add_temperature_deviation(self, sensors_df: pl.DataFrame) -> pl.DataFrame:
+        """
+        Adds a column with the temperature deviation from the standard temperature.
+        """
+        
+        if 'quantity_liters' in sensors_df.columns:
+        
+            return sensors_df.with_columns(
+                (abs(pl.col('temp') - self.STANDARD_TEMPERATURE) * 1000/pl.col('quantity_liters')).alias('temperature_deviation_scaled')
+            )
+        
+        else: 
+            
+            return sensors_df.with_columns(
+                (abs(pl.col('temp') - self.STANDARD_TEMPERATURE)).alias('temperature_deviation')
+            )
+        
+        
+        
+        
+      
+   
+        
