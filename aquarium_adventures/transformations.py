@@ -48,13 +48,10 @@ class AquariumTransformer(BaseAquariumAnalyzer):
         if self.tank_info_df_fish_species_split is None:
             raise ValueError("tank_info_df_fish_species_split must be provided to add_num_readings_per_fish_species.")
         
-        if 'fish_species' not in sensors_df.columns:
-            return sensors_df
-        
-        else:
+        if 'fish_species' in sensors_df.columns:
             fish_species_num_readings_table = sensors_df.group_by('fish_species').agg(pl.len().alias('fish_species_num_readings'))
             return pl.DataFrame.join(sensors_df, fish_species_num_readings_table, on='fish_species')
         
-
-   
-        
+        else:
+            return sensors_df
+           
