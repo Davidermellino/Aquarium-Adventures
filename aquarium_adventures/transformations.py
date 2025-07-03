@@ -47,7 +47,7 @@ class AquariumTransformer(BaseAquariumAnalyzer):
         """
         # Check if tank_info data exists and has fish_species column
         if self.tank_info_df_fish_species_split is None:
-            raise ValueError("tank_info_df_fish_species_split is not available")
+            raise AttributeError("tank_info_df_fish_species_split is not available")
         
         if 'fish_species' not in self.tank_info_df_fish_species_split.columns:
             raise ValueError("fish_species column not found in tank_info_df_fish_species_split")
@@ -65,12 +65,12 @@ class AquariumTransformer(BaseAquariumAnalyzer):
         fish_species_readings = (
             tank_info_exploded
             .join(
-            sensors_df.select(['tank_id', 'tank_num_readings']).unique(), 
-            on='tank_id'
+                sensors_df.select(['tank_id', 'tank_num_readings']).unique(), 
+                on='tank_id'
             )
             .group_by('fish_species')
             .agg(
-            pl.col('tank_num_readings').sum().alias('fish_species_num_readings')
+                pl.col('tank_num_readings').sum().alias('fish_species_num_readings')
             )
         )
         
