@@ -70,7 +70,7 @@ class AquariumTransformer(BaseAquariumAnalyzer):
             )
             .group_by('fish_species')
             .agg(
-            pl.col('tank_num_readings').sum().alias('num_readings_per_fish_species')
+            pl.col('tank_num_readings').sum().alias('fish_species_num_readings')
             )
         )
         
