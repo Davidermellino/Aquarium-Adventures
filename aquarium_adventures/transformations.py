@@ -56,9 +56,14 @@ class AquariumTransformer(BaseAquariumAnalyzer):
         if 'tank_num_readings' not in sensors_df.columns:
             sensors_df = self.add_num_readings_per_tank(sensors_df)
         
+        # Explode fish_species if it's a list column
+        tank_info_exploded = self.tank_info_df_fish_species_split
+        if self.tank_info_df_fish_species_split['fish_species'].dtype == pl.List:
+            tank_info_exploded = self.tank_info_df_fish_species_split.explode('fish_species')
+        
         # Create DataFrame with readings per fish species
         fish_species_readings = (
-            self.tank_info_df_fish_species_split
+            tank_info_exploded
             .join(
             sensors_df.select(['tank_id', 'tank_num_readings']).unique(), 
             on='tank_id'
@@ -70,7 +75,7 @@ class AquariumTransformer(BaseAquariumAnalyzer):
         )
         
         # Join back to sensors_df via tank_info
-        sensors_with_species = sensors_df.join(self.tank_info_df_fish_species_split, on='tank_id')
+        sensors_with_species = sensors_df.join(tank_info_exploded, on='tank_id')
         result = sensors_with_species.join(fish_species_readings, on='fish_species')
         
         return result
