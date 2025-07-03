@@ -1,0 +1,2 @@
+class BaseAquariumAnalyzer():
+    pass

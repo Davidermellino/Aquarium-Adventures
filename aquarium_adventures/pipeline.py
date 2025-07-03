@@ -1,0 +1,2 @@
+class AquariumPipeline:
+    pass
