@@ -1,7 +1,7 @@
 from abc import ABC, abstractmethod
 import polars as pl
 
-class BaseAquariumAnalyzer():
+class BaseAquariumAnalyzer(ABC):
     @abstractmethod
     def analyze_data(self, data: pl.DataFrame) -> pl.DataFrame:
         """
