@@ -24,4 +24,11 @@ jobs:
         if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
     - name: Run tests
       run: |
-        pytest
+        echo "Running test base"
+        pytest tests/units/test_base.py
+        echo "Running test transformations"
+        pytest tests/units/test_transformations.py
+        echo "Running test computations"
+        pytest tests/units/test_computations.py
+        echo "Running test pipeline"
+        pytest tests/units/test_pipeline.py
