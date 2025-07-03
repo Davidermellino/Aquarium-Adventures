@@ -6,7 +6,7 @@ class AquariumTransformer(BaseAquariumAnalyzer):
     def __init__(self, tank_info_df_fish_species_split=None):
         pass
     
-    def analyze_data(self):
+    def analyze_data(self, sensors_df: pl.DataFrame) -> pl.DataFrame:
         pass
     
     def add_num_readings_per_tank(self, sensors_df):
@@ -20,6 +20,5 @@ class AquariumTransformer(BaseAquariumAnalyzer):
         """ 
         Calculates the average pH per tank and adds it to the DataFrame 
         """
-
-        avg_ph = df.group_by("tank_id").agg(pl.col("pH").mean().alias("avg_pH"))
+        avg_ph = df.group_by("tank_id").agg(pl.col("pH").mean().alias("avg_pH_per_tank"))
         return df.join(avg_ph, on="tank_id") 
