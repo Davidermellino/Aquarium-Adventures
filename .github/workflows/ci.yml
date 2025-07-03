@@ -1,12 +1,9 @@
 name: CI
 
 on:
-  push:           # Trigger su ogni push
-    branches:     # Su tutti i branch
-      - '**'
-  pull_request:   # Trigger su ogni PR
+  pull_request:   
     branches:
-      - main      # O il tuo branch principale
+      - main     
 
 jobs:
   test:
