@@ -7,7 +7,6 @@ class AquariumTransformer(BaseAquariumAnalyzer):
     def __init__(self, tank_info_df_fish_species_split=None):
         self.tank_info_df_fish_species_split = tank_info_df_fish_species_split
         
-        
     def analyze_data(self, sensors_df: pl.DataFrame) -> pl.DataFrame:
         pass
     
@@ -41,10 +40,21 @@ class AquariumTransformer(BaseAquariumAnalyzer):
             return sensors_df.with_columns(
                 (abs(pl.col('temp') - self.STANDARD_TEMPERATURE)).alias('temperature_deviation')
             )
+           
+    def add_num_readings_per_fish_species(self, sensors_df: pl.DataFrame) -> pl.DataFrame:
+        """
+        Adds a column with the number of readings per fish species.
+        """
+        if self.tank_info_df_fish_species_split is None:
+            raise ValueError("tank_info_df_fish_species_split must be provided to add_num_readings_per_fish_species.")
         
+        if 'fish_species' not in sensors_df.columns:
+            return sensors_df
         
+        else:
+            fish_species_num_readings_table = sensors_df.group_by('fish_species').agg(pl.len().alias('fish_species_num_readings'))
+            return pl.DataFrame.join(sensors_df, fish_species_num_readings_table, on='fish_species')
         
-        
-      
+
    
         
