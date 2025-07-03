@@ -7,7 +7,6 @@ class AquariumTransformer(BaseAquariumAnalyzer):
     def __init__(self, tank_info_df_fish_species_split=None):
         self.tank_info_df_fish_species_split = tank_info_df_fish_species_split
         
-        
     def analyze_data(self, sensors_df: pl.DataFrame) -> pl.DataFrame:
         pass
     
@@ -41,10 +40,42 @@ class AquariumTransformer(BaseAquariumAnalyzer):
             return sensors_df.with_columns(
                 (abs(pl.col('temp') - self.STANDARD_TEMPERATURE)).alias('temperature_deviation')
             )
+           
+    def add_num_readings_per_fish_species(self, sensors_df: pl.DataFrame) -> pl.DataFrame:
+        """
+        Adds a column with the number of readings per fish species.
+        """
+        # Check if tank_info data exists and has fish_species column
+        if self.tank_info_df_fish_species_split is None:
+            raise AttributeError("tank_info_df_fish_species_split is not available")
         
+        if 'fish_species' not in self.tank_info_df_fish_species_split.columns:
+            raise ValueError("fish_species column not found in tank_info_df_fish_species_split")
         
+        # Check if tank_num_readings column exists, if not add it
+        if 'tank_num_readings' not in sensors_df.columns:
+            sensors_df = self.add_num_readings_per_tank(sensors_df)
         
+        # Explode fish_species if it's a list column
+        tank_info_exploded = self.tank_info_df_fish_species_split
+        if self.tank_info_df_fish_species_split['fish_species'].dtype == pl.List:
+            tank_info_exploded = self.tank_info_df_fish_species_split.explode('fish_species')
         
-      
-   
+        # Create DataFrame with readings per fish species
+        fish_species_readings = (
+            tank_info_exploded
+            .join(
+                sensors_df.select(['tank_id', 'tank_num_readings']).unique(), 
+                on='tank_id'
+            )
+            .group_by('fish_species')
+            .agg(
+                pl.col('tank_num_readings').sum().alias('fish_species_num_readings')
+            )
+        )
         
+        # Join back to sensors_df via tank_info
+        sensors_with_species = sensors_df.join(tank_info_exploded, on='tank_id')
+        result = sensors_with_species.join(fish_species_readings, on='fish_species')
+        
+        return result
