@@ -35,6 +35,7 @@ def test_hpc_computations_class():
             "quantity_liters": [500, 500],
         }
     )
+
     hpc = AquariumHPCComputations()
     df_out = hpc.analyze_data(df_input)
     assert "stress_score" in df_out.columns
