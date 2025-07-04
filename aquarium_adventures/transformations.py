@@ -16,9 +16,11 @@ class AquariumTransformer(BaseAquariumAnalyzer):
         sensors_df = self.add_num_readings_per_tank(sensors_df)
         sensors_df = self.add_avg_ph_per_tank(sensors_df)
         sensors_df = self.add_temperature_deviation(sensors_df)
-        out_df = self.add_num_readings_per_fish_species(sensors_df)
+        
+        if self.tank_info_df_fish_species_split is not None:
+            sensors_df = self.add_num_readings_per_fish_species(sensors_df)
 
-        return out_df
+        return sensors_df
 
     def add_num_readings_per_tank(self, sensors_df):
         """
