@@ -32,3 +32,5 @@ jobs:
         pytest tests/unit/test_computations.py
         echo "Running test pipeline"
         pytest tests/unit/test_pipeline.py
+        echo "Running acceptance test"
+        pytest tests/acceptance/test_aquarium_acceptance.py
