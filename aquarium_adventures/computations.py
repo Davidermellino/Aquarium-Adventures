@@ -34,21 +34,18 @@ def pairwise_stress_function(
 
     for i in range(0, n):
         for j in range(0, n):
+            if (
+            np.isnan(pH_vals[i]) or np.isnan(pH_vals[j]) or
+            np.isnan(temp_vals[i]) or np.isnan(temp_vals[j]) or
+            np.isnan(quantity_vals[i]) or np.isnan(quantity_vals[j])
+            ):
+                continue
             pH_dev = abs(pH_vals[i] - pH_vals[j])
             t_dev = abs(temp_vals[i] - temp_vals[j]) * 2
-            quantity_factor = (500.0 / quantity_vals[i]) + (500.0 / quantity_vals[j])
+            quantity_factor = (500.0 / (quantity_vals[i])) + (500.0 / (quantity_vals[j]))
             stress_sum += (pH_dev + t_dev) * quantity_factor
-
     final_stress = stress_sum / (n * n)
-
+    
     return final_stress
 
 
-if __name__ == "__main__":
-    tank_info_df_fish_species_split = pl.read_csv(
-        "data/tank_info_sample.tsv", separator="\t"
-    ).with_columns(pl.col("fish_species").str.split(","))
-    sensor_df = pl.read_csv("data/sensors_sample.tsv", separator="\t")
-    trasformer = AquariumTransformer(tank_info_df_fish_species_split)
-    out_df = trasformer.add_num_readings_per_fish_species(sensors_df=sensor_df)
-    print(out_df.columns)
