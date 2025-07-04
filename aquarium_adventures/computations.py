@@ -12,7 +12,7 @@ class AquariumHPCComputations(BaseAquariumAnalyzer):
     def analyze_data(self, df):
         pH_vals = df["pH"].to_numpy()
         temp_vals = df["temp"].to_numpy()
-        quantity_vals = df["capacity_liters"].to_numpy()
+        quantity_vals = df["quantity_liters"].to_numpy()
 
         stress_score = pairwise_stress_function(pH_vals, temp_vals, quantity_vals)
 
