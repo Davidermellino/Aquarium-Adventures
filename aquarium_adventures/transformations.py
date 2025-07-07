@@ -1,5 +1,6 @@
 import polars as pl
 from aquarium_adventures.base import BaseAquariumAnalyzer
+import joblib
 
 
 class AquariumTransformer(BaseAquariumAnalyzer):
@@ -35,9 +36,21 @@ class AquariumTransformer(BaseAquariumAnalyzer):
         """
         Calculates the average pH per tank and adds it to the DataFrame
         """
-        avg_ph = df.group_by("tank_id").agg(
-            pl.col("pH").mean().alias("avg_pH_per_tank")
+        def calculate_tank_avg_ph(tank_data):
+            tank_id, tank_df = tank_data
+            avg_ph = tank_df["pH"].mean()
+            return {"tank_id": tank_id, "avg_pH_per_tank": avg_ph}
+        
+        # Group data by tank_id and parallelize the pH calculation
+        tank_groups = [(tank_id, group_df.to_pandas()) for tank_id, group_df in df.group_by("tank_id")]
+        
+        # Use joblib to parallelize the pH calculations
+        avg_ph_results = joblib.Parallel(n_jobs=-1)(
+            joblib.delayed(calculate_tank_avg_ph)(tank_data) for tank_data in tank_groups
         )
+        
+        # Convert results back to Polars DataFrame
+        avg_ph = pl.DataFrame(avg_ph_results)
         return df.join(avg_ph, on="tank_id")
 
     def add_temperature_deviation(self, sensors_df: pl.DataFrame) -> pl.DataFrame:
