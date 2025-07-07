@@ -1,6 +1,6 @@
 import polars as pl
-from joblib import Parallel, delayed
 from aquarium_adventures.base import BaseAquariumAnalyzer
+from joblib import Parallel, delayed
 
 
 class AquariumTransformer(BaseAquariumAnalyzer):
@@ -8,16 +8,38 @@ class AquariumTransformer(BaseAquariumAnalyzer):
 
     def __init__(self, tank_info_df_fish_species_split=None):
         self.tank_info_df_fish_species_split = tank_info_df_fish_species_split
-    
+
+    from joblib import Parallel, delayed
+
     def analyze_data(self, sensors_df: pl.DataFrame) -> pl.DataFrame:
         """
         Analyzes the sensor data and adds various calculated columns.
         """
-        
-        sensors_df = self.add_num_readings_per_tank(sensors_df)
-        sensors_df = self.add_avg_ph_per_tank(sensors_df)
-        sensors_df = self.add_temperature_deviation(sensors_df)
-        
+
+        def apply_transformation(func, df):
+            return func(df)
+
+        transformations = [
+            self.add_num_readings_per_tank,
+            self.add_avg_ph_per_tank,
+            self.add_temperature_deviation,
+        ]
+
+        # Apply transformations in parallel
+        results = Parallel(n_jobs=3)(
+            delayed(apply_transformation)(transformation, sensors_df)
+            for transformation in transformations
+        )
+
+        # Extract only new columns from each transformation result
+        results = [
+            result.select([col for col in result.columns if col not in sensors_df.columns])
+            for result in results
+        ]
+
+        # Combine the results into a single DataFrame
+        sensors_df = pl.concat([sensors_df] + results, how="horizontal")
+
         if self.tank_info_df_fish_species_split is not None:
             sensors_df = self.add_num_readings_per_fish_species(sensors_df)
 
@@ -30,7 +52,7 @@ class AquariumTransformer(BaseAquariumAnalyzer):
         tank_num_readings_table = sensors_df.group_by("tank_id").agg(
             pl.len().alias("tank_num_readings")
         )
-        return sensors_df.join(tank_num_readings_table, on="tank_id")
+        return pl.DataFrame.join(sensors_df, tank_num_readings_table, on="tank_id")
 
     def add_avg_ph_per_tank(self, sensors_df: pl.DataFrame) -> pl.DataFrame:
         """

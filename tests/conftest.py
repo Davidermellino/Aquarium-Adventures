@@ -62,7 +62,7 @@ def tank_info_df_fish_species_split():
 @pytest.fixture()
 def monkey_joblib(monkeypatch):
     def execute_parallel(*args, **kwargs):
-        [func(*inner_args, **kwargs) for func, inner_args, kwargs in args[0]]
+        return [func(*inner_args, **kwargs) for func, inner_args, kwargs in args[0]]
 
     fake_parallel_mock = Mock(side_effect=execute_parallel)
     fake_delayed_mock = Mock(wraps=joblib.delayed)
