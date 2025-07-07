@@ -16,12 +16,12 @@ class AquariumTransformer(BaseAquariumAnalyzer):
 
         # Apply independent transformations in parallel
         parallel_funcs = [
-            delayed(self.add_num_readings_per_tank),
-            delayed(self.add_avg_ph_per_tank),
-            delayed(self.add_temperature_deviation),
+            self.add_num_readings_per_tank,
+            self.add_avg_ph_per_tank,
+            self.add_temperature_deviation,
         ]
         dfs = Parallel(n_jobs=3)(
-            func(sensors_df) for func in parallel_funcs
+            delayed(func)(sensors_df) for func in parallel_funcs
         )
 
         # Merge the results on all columns present in the original sensors_df
