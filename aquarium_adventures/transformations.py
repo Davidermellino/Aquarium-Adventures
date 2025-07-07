@@ -40,7 +40,7 @@ class AquariumTransformer(BaseAquariumAnalyzer):
         """
         Adds a column with the number of readings per tank.
         """
-        sensors_df = sensors_df.copy()
+        sensors_df = sensors_df.clone()
         tank_num_readings_table = sensors_df.group_by("tank_id").agg(
             pl.len().alias("tank_num_readings")
         )
@@ -50,7 +50,7 @@ class AquariumTransformer(BaseAquariumAnalyzer):
         """
         Calculates the average pH per tank and adds it to the DataFrame
         """
-        sensors_df = sensors_df.copy()
+        sensors_df = sensors_df.clone()
         avg_ph = df.group_by("tank_id").agg(
             pl.col("pH").mean().alias("avg_pH_per_tank")
         )
@@ -60,7 +60,7 @@ class AquariumTransformer(BaseAquariumAnalyzer):
         """
         Adds a column with the temperature deviation from the standard temperature.
         """
-        sensors_df = sensors_df.copy()
+        sensors_df = sensors_df.clone()
 
         if "quantity_liters" in sensors_df.columns:
             return sensors_df.with_columns(
