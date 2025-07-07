@@ -1,6 +1,6 @@
 import polars as pl
-from joblib import Parallel, delayed
 from aquarium_adventures.base import BaseAquariumAnalyzer
+from joblib import Parallel, delayed
 
 
 class AquariumTransformer(BaseAquariumAnalyzer):
@@ -13,54 +13,38 @@ class AquariumTransformer(BaseAquariumAnalyzer):
         """
         Analyzes the sensor data and adds various calculated columns.
         """
+
+        sensors_df = self.add_num_readings_per_tank(sensors_df)
+        sensors_df = self.add_avg_ph_per_tank(sensors_df)
+        sensors_df = self.add_temperature_deviation(sensors_df)
         
-        # Parallelize the execution of the functions with joblib
-        results = Parallel(n_jobs=3)(
-            delayed(func)(sensors_df) for func in [
-                self.add_num_readings_per_tank,
-                self.add_avg_ph_per_tank,
-                self.add_temperature_deviation
-            ]
-        )
-        
-        # Combine the results into a single DataFrame
-        for result_df in results:
-            # Extract new columns that are not already in sensors_df
-            new_columns = [col for col in result_df.columns if col not in sensors_df.columns]
-            if new_columns:
-                sensors_df = sensors_df.with_columns(result_df.select(new_columns))
-        
-        # Esegui la quarta funzione se necessario
         if self.tank_info_df_fish_species_split is not None:
             sensors_df = self.add_num_readings_per_fish_species(sensors_df)
-        
+
         return sensors_df
 
-    def add_num_readings_per_tank(self, df: pl.DataFrame) -> pl.DataFrame:
+    def add_num_readings_per_tank(self, sensors_df: pl.DataFrame) -> pl.DataFrame:
         """
         Adds a column with the number of readings per tank.
         """
-        sensors_df = df.clone()
         tank_num_readings_table = sensors_df.group_by("tank_id").agg(
             pl.len().alias("tank_num_readings")
         )
-        return pl.DataFrame.join(sensors_df, tank_num_readings_table, on="tank_id")
+        return sensors_df.join(tank_num_readings_table, on="tank_id")
 
-    def add_avg_ph_per_tank(self, df: pl.DataFrame) -> pl.DataFrame:
+    def add_avg_ph_per_tank(self, sensors_df: pl.DataFrame) -> pl.DataFrame:
         """
         Calculates the average pH per tank and adds it to the DataFrame
         """
-        sensors_df = df.clone()
-        avg_ph = df.group_by("tank_id").agg(
+        avg_ph = sensors_df.group_by("tank_id").agg(
             pl.col("pH").mean().alias("avg_pH_per_tank")
         )
-        return df.join(avg_ph, on="tank_id")
+        return sensors_df.join(avg_ph, on="tank_id")
 
-    def add_temperature_deviation(self, df: pl.DataFrame) -> pl.DataFrame:
+    def add_temperature_deviation(self, sensors_df: pl.DataFrame) -> pl.DataFrame:
         """
         Adds a column with the temperature deviation from the standard temperature.
         """
-        sensors_df = df.clone()
 
         if "quantity_liters" in sensors_df.columns:
             return sensors_df.with_columns(
@@ -104,15 +88,28 @@ class AquariumTransformer(BaseAquariumAnalyzer):
                 "fish_species"
             )
 
-        # Create DataFrame with readings per fish species
-        fish_species_readings = (
-            tank_info_exploded.join(
-                sensors_df.select(["tank_id", "tank_num_readings"]).unique(),
-                on="tank_id",
+        # Function to process a chunk of data
+        def process_chunk(chunk):
+            chunk_readings = (
+                chunk.join(
+                    sensors_df.select(["tank_id", "tank_num_readings"]).unique(),
+                    on="tank_id",
+                )
+                .group_by("fish_species")
+                .agg(pl.col("tank_num_readings").sum().alias("fish_species_num_readings"))
             )
-            .group_by("fish_species")
-            .agg(pl.col("tank_num_readings").sum().alias("fish_species_num_readings"))
+            return chunk_readings
+
+        # Split tank_info_exploded into chunks
+        chunks = tank_info_exploded.partition_by("fish_species", as_dict=False)
+
+        # Process chunks in parallel
+        fish_species_readings_list = Parallel(n_jobs=-1)(
+            delayed(process_chunk)(chunk) for chunk in chunks
         )
+
+        # Combine results
+        fish_species_readings = pl.concat(fish_species_readings_list)
 
         # Join back to sensors_df via tank_info
         sensors_with_species = sensors_df.join(tank_info_exploded, on="tank_id")
