@@ -1,6 +1,6 @@
 import polars as pl
-from aquarium_adventures.base import BaseAquariumAnalyzer
 from joblib import Parallel, delayed
+from aquarium_adventures.base import BaseAquariumAnalyzer
 
 
 class AquariumTransformer(BaseAquariumAnalyzer):
@@ -13,7 +13,7 @@ class AquariumTransformer(BaseAquariumAnalyzer):
         """
         Analyzes the sensor data and adds various calculated columns.
         """
-
+        
         sensors_df = self.add_num_readings_per_tank(sensors_df)
         sensors_df = self.add_avg_ph_per_tank(sensors_df)
         sensors_df = self.add_temperature_deviation(sensors_df)
@@ -88,28 +88,15 @@ class AquariumTransformer(BaseAquariumAnalyzer):
                 "fish_species"
             )
 
-        # Function to process a chunk of data
-        def process_chunk(chunk):
-            chunk_readings = (
-                chunk.join(
-                    sensors_df.select(["tank_id", "tank_num_readings"]).unique(),
-                    on="tank_id",
-                )
-                .group_by("fish_species")
-                .agg(pl.col("tank_num_readings").sum().alias("fish_species_num_readings"))
+        # Create DataFrame with readings per fish species
+        fish_species_readings = (
+            tank_info_exploded.join(
+                sensors_df.select(["tank_id", "tank_num_readings"]).unique(),
+                on="tank_id",
             )
-            return chunk_readings
-
-        # Split tank_info_exploded into chunks
-        chunks = tank_info_exploded.partition_by("fish_species", as_dict=False)
-
-        # Process chunks in parallel
-        fish_species_readings_list = Parallel(n_jobs=-1)(
-            delayed(process_chunk)(chunk) for chunk in chunks
+            .group_by("fish_species")
+            .agg(pl.col("tank_num_readings").sum().alias("fish_species_num_readings"))
         )
-
-        # Combine results
-        fish_species_readings = pl.concat(fish_species_readings_list)
 
         # Join back to sensors_df via tank_info
         sensors_with_species = sensors_df.join(tank_info_exploded, on="tank_id")
