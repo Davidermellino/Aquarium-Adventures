@@ -1,5 +1,6 @@
 import polars as pl
 from aquarium_adventures.base import BaseAquariumAnalyzer
+import joblib
 
 
 class AquariumTransformer(BaseAquariumAnalyzer):
@@ -13,16 +14,33 @@ class AquariumTransformer(BaseAquariumAnalyzer):
         Analyzes the sensor data and adds various calculated columns.
         """
 
-        sensors_df = self.add_num_readings_per_tank(sensors_df)
-        sensors_df = self.add_avg_ph_per_tank(sensors_df)
-        sensors_df = self.add_temperature_deviation(sensors_df)
-        
+        transformations = [
+            self.add_num_readings_per_tank,
+            self.add_avg_ph_per_tank,
+            self.add_temperature_deviation,
+        ]
+
+        # Apply transformations in parallel
+        results = joblib.Parallel(n_jobs=3)(
+            joblib.delayed(transformation)(sensors_df)
+            for transformation in transformations
+)
+
+        # Extract only new columns from each transformation result
+        results = [
+            result.select([col for col in result.columns if col not in sensors_df.columns])
+            for result in results
+        ]
+
+        # Combine the results into a single DataFrame
+        sensors_df = pl.concat([sensors_df] + results, how="horizontal")
+
         if self.tank_info_df_fish_species_split is not None:
             sensors_df = self.add_num_readings_per_fish_species(sensors_df)
 
         return sensors_df
 
-    def add_num_readings_per_tank(self, sensors_df):
+    def add_num_readings_per_tank(self, sensors_df: pl.DataFrame) -> pl.DataFrame:
         """
         Adds a column with the number of readings per tank.
         """
@@ -31,14 +49,14 @@ class AquariumTransformer(BaseAquariumAnalyzer):
         )
         return pl.DataFrame.join(sensors_df, tank_num_readings_table, on="tank_id")
 
-    def add_avg_ph_per_tank(self, df: pl.DataFrame) -> pl.DataFrame:
+    def add_avg_ph_per_tank(self, sensors_df: pl.DataFrame) -> pl.DataFrame:
         """
         Calculates the average pH per tank and adds it to the DataFrame
         """
-        avg_ph = df.group_by("tank_id").agg(
+        avg_ph = sensors_df.group_by("tank_id").agg(
             pl.col("pH").mean().alias("avg_pH_per_tank")
         )
-        return df.join(avg_ph, on="tank_id")
+        return sensors_df.join(avg_ph, on="tank_id")
 
     def add_temperature_deviation(self, sensors_df: pl.DataFrame) -> pl.DataFrame:
         """

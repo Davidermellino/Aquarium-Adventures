@@ -1,7 +1,7 @@
 import polars as pl
 import pytest
-
 from aquarium_adventures.main import run_full_pipeline
+from unittest.mock import MagicMock, patch
 
 
 @pytest.mark.slow
