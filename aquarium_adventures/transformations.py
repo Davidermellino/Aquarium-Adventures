@@ -1,4 +1,5 @@
 import polars as pl
+from joblib import Parallel, delayed
 from aquarium_adventures.base import BaseAquariumAnalyzer
 
 
@@ -7,19 +8,34 @@ class AquariumTransformer(BaseAquariumAnalyzer):
 
     def __init__(self, tank_info_df_fish_species_split=None):
         self.tank_info_df_fish_species_split = tank_info_df_fish_species_split
-
+    
     def analyze_data(self, sensors_df: pl.DataFrame) -> pl.DataFrame:
         """
         Analyzes the sensor data and adds various calculated columns.
         """
 
-        sensors_df = self.add_num_readings_per_tank(sensors_df)
-        sensors_df = self.add_avg_ph_per_tank(sensors_df)
-        sensors_df = self.add_temperature_deviation(sensors_df)
+        # Prepare transformations to run in parallel
+        transformations = [
+            delayed(self.add_num_readings_per_tank),
+            delayed(self.add_avg_ph_per_tank),
+            delayed(self.add_temperature_deviation)
+        ]
+        
+        # Execute transformations in parallel
+        results = Parallel(n_jobs=-1)(transform(sensors_df) for transform in transformations)
+        
+        # Combine results by joining all the calculated columns
+        final_df = sensors_df
+        for result in results:
+            # Join each result back to the original dataframe
+            join_cols = [col for col in result.columns if col not in final_df.columns or col == "tank_id"]
+            if len(join_cols) > 1:  # More than just tank_id
+                final_df = final_df.join(result.select(join_cols), on="tank_id")
         
         if self.tank_info_df_fish_species_split is not None:
-            sensors_df = self.add_num_readings_per_fish_species(sensors_df)
+            final_df = self.add_num_readings_per_fish_species(final_df)
 
+        return final_df
         return sensors_df
 
     def add_num_readings_per_tank(self, sensors_df):
