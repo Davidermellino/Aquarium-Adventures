@@ -1,6 +1,6 @@
 import polars as pl
 from aquarium_adventures.base import BaseAquariumAnalyzer
-from joblib import Parallel, delayed
+import joblib
 
 
 class AquariumTransformer(BaseAquariumAnalyzer):
@@ -9,15 +9,10 @@ class AquariumTransformer(BaseAquariumAnalyzer):
     def __init__(self, tank_info_df_fish_species_split=None):
         self.tank_info_df_fish_species_split = tank_info_df_fish_species_split
 
-    from joblib import Parallel, delayed
-
     def analyze_data(self, sensors_df: pl.DataFrame) -> pl.DataFrame:
         """
         Analyzes the sensor data and adds various calculated columns.
         """
-
-        def apply_transformation(func, df):
-            return func(df)
 
         transformations = [
             self.add_num_readings_per_tank,
@@ -26,10 +21,10 @@ class AquariumTransformer(BaseAquariumAnalyzer):
         ]
 
         # Apply transformations in parallel
-        results = Parallel(n_jobs=3)(
-            delayed(apply_transformation)(transformation, sensors_df)
+        results = joblib.Parallel(n_jobs=3)(
+            joblib.delayed(transformation)(sensors_df)
             for transformation in transformations
-        )
+)
 
         # Extract only new columns from each transformation result
         results = [
