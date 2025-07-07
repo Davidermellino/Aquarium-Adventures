@@ -13,30 +13,27 @@ class AquariumTransformer(BaseAquariumAnalyzer):
         """
         Analyzes the sensor data and adds various calculated columns.
         """
-
-        # Apply independent transformations in parallel
-        parallel_funcs = [
-            self.add_num_readings_per_tank,
-            self.add_avg_ph_per_tank,
-            self.add_temperature_deviation,
-        ]
-        dfs = Parallel(n_jobs=3)(
-            delayed(func)(sensors_df) for func in parallel_funcs
+        # Parallelize the execution of the functions with joblib
+        results = Parallel(n_jobs=3)(
+            delayed(func)(sensors_df) for func in [
+                self.add_num_readings_per_tank,
+                self.add_avg_ph_per_tank,
+                self.add_temperature_deviation
+            ]
         )
-
-        # Merge the results on all columns present in the original sensors_df
-        from functools import reduce
-        def merge_on_all(df1, df2):
-            common_cols = [col for col in df1.columns if col in df2.columns]
-            return df1.join(df2, on=common_cols, how="inner")
-
-        final_df = reduce(merge_on_all, dfs)
-
-        # Add fish species readings if tank_info is available
+        
+        # Combine the results into a single DataFrame
+        for result_df in results:
+            # Extract new columns that are not already in sensors_df
+            new_columns = [col for col in result_df.columns if col not in sensors_df.columns]
+            if new_columns:
+                sensors_df = sensors_df.with_columns(result_df.select(new_columns))
+        
+        # Esegui la quarta funzione se necessario
         if self.tank_info_df_fish_species_split is not None:
-            final_df = self.add_num_readings_per_fish_species(final_df)
-
-        return final_df
+            sensors_df = self.add_num_readings_per_fish_species(sensors_df)
+        
+        return sensors_df
 
     def add_num_readings_per_tank(self, sensors_df):
         """
