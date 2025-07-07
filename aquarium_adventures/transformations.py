@@ -13,6 +13,7 @@ class AquariumTransformer(BaseAquariumAnalyzer):
         """
         Analyzes the sensor data and adds various calculated columns.
         """
+        
         # Parallelize the execution of the functions with joblib
         results = Parallel(n_jobs=3)(
             delayed(func)(sensors_df) for func in [
@@ -39,6 +40,7 @@ class AquariumTransformer(BaseAquariumAnalyzer):
         """
         Adds a column with the number of readings per tank.
         """
+        sensors_df = sensors_df.copy()
         tank_num_readings_table = sensors_df.group_by("tank_id").agg(
             pl.len().alias("tank_num_readings")
         )
@@ -48,6 +50,7 @@ class AquariumTransformer(BaseAquariumAnalyzer):
         """
         Calculates the average pH per tank and adds it to the DataFrame
         """
+        sensors_df = sensors_df.copy()
         avg_ph = df.group_by("tank_id").agg(
             pl.col("pH").mean().alias("avg_pH_per_tank")
         )
@@ -57,6 +60,7 @@ class AquariumTransformer(BaseAquariumAnalyzer):
         """
         Adds a column with the temperature deviation from the standard temperature.
         """
+        sensors_df = sensors_df.copy()
 
         if "quantity_liters" in sensors_df.columns:
             return sensors_df.with_columns(
