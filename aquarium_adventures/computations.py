@@ -21,7 +21,7 @@ class AquariumHPCComputations(BaseAquariumAnalyzer):
         return result_df
 
 
-@numba.njit()
+@numba.njit(parallel=True)
 def pairwise_stress_function(
     pH_vals: np.array, temp_vals: np.array, quantity_vals: np.array
 ) -> float:
@@ -32,8 +32,8 @@ def pairwise_stress_function(
 
     stress_sum = 0.0
 
-    for i in range(0, n):
-        for j in range(0, n):
+    for i in numba.prange(0, n):
+        for j in numba.prange(0, n):
             if (
             np.isnan(pH_vals[i]) or np.isnan(pH_vals[j]) or
             np.isnan(temp_vals[i]) or np.isnan(temp_vals[j]) or
