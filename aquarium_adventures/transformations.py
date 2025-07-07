@@ -14,29 +14,29 @@ class AquariumTransformer(BaseAquariumAnalyzer):
         Analyzes the sensor data and adds various calculated columns.
         """
 
-        # Prepare transformations to run in parallel
-        transformations = [
+        # Apply independent transformations in parallel
+        parallel_funcs = [
             delayed(self.add_num_readings_per_tank),
             delayed(self.add_avg_ph_per_tank),
-            delayed(self.add_temperature_deviation)
+            delayed(self.add_temperature_deviation),
         ]
-        
-        # Execute transformations in parallel
-        results = Parallel(n_jobs=-1)(transform(sensors_df) for transform in transformations)
-        
-        # Combine results by joining all the calculated columns
-        final_df = sensors_df
-        for result in results:
-            # Join each result back to the original dataframe
-            join_cols = [col for col in result.columns if col not in final_df.columns or col == "tank_id"]
-            if len(join_cols) > 1:  # More than just tank_id
-                final_df = final_df.join(result.select(join_cols), on="tank_id")
-        
+        dfs = Parallel(n_jobs=3)(
+            func(sensors_df) for func in parallel_funcs
+        )
+
+        # Merge the results on all columns present in the original sensors_df
+        from functools import reduce
+        def merge_on_all(df1, df2):
+            common_cols = [col for col in df1.columns if col in df2.columns]
+            return df1.join(df2, on=common_cols, how="inner")
+
+        final_df = reduce(merge_on_all, dfs)
+
+        # Add fish species readings if tank_info is available
         if self.tank_info_df_fish_species_split is not None:
             final_df = self.add_num_readings_per_fish_species(final_df)
 
         return final_df
-        return sensors_df
 
     def add_num_readings_per_tank(self, sensors_df):
         """
