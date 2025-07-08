@@ -2,7 +2,6 @@ import polars as pl
 from aquarium_adventures.transformations import AquariumTransformer
 from aquarium_adventures.computations import AquariumHPCComputations
 from aquarium_adventures.pipeline import AquariumPipeline
-import wandb
 
 
 def run_full_pipeline(
@@ -21,20 +20,20 @@ def run_full_pipeline(
         pl.DataFrame: The final processed DataFrame.
     """
 
-    #LOAD DATA
+    # LOAD DATA
     sensors_df = pl.read_csv(input_csv, separator="\t")
 
     tank_info_df_fish_species_split = None
     if tank_info_csv:
-        tank_info_df_fish_species_split = pl.read_csv(tank_info_csv, separator="\t").with_columns(
-            pl.col("fish_species").str.split(",")
-        )
+        tank_info_df_fish_species_split = pl.read_csv(
+            tank_info_csv, separator="\t"
+        ).with_columns(pl.col("fish_species").str.split(","))
 
-    #INITIALIZE TRANSFORMER AND COMPUTATIONS
+    # INITIALIZE TRANSFORMER AND COMPUTATIONS
     transformer = AquariumTransformer(tank_info_df_fish_species_split)
     hpc_computations = AquariumHPCComputations()
 
-    #RUN PIPELINE
+    # RUN PIPELINE
     pipeline = AquariumPipeline(
         analyzers=[transformer, hpc_computations], project_name=project_name
     )
@@ -45,4 +44,17 @@ def run_full_pipeline(
 
     return result_df
 
-
+if __name__ == "__main__":
+    
+    sensors_csv = "data/full_sensors.tsv"
+    tank_info_csv = "data/full_tank_info.tsv"
+    
+    output_csv = "data/processed_data.tsv"
+    
+    # Run the full pipeline
+    run_full_pipeline(
+        input_csv=sensors_csv,
+        tank_info_csv=tank_info_csv,
+        output_csv=output_csv,
+        project_name="AquariumAdventures"
+    )

@@ -29,7 +29,7 @@ class AquariumPipeline:
     def log_to_wandb(self, df):
         """
         Logs the results to Weights & Biases.
-        
+
         Args:
             df (pl.DataFrame): The DataFrame containing the results to log.
         Returns:
