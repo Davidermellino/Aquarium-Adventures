@@ -43,3 +43,18 @@ def run_full_pipeline(
         result_df.write_csv(output_csv, separator="\t")
 
     return result_df
+
+if __name__ == "__main__":
+    
+    sensors_csv = "data/full_sensors.tsv"
+    tank_info_csv = "data/full_tank_info.tsv"
+    
+    output_csv = "data/processed_data.tsv"
+    
+    # Run the full pipeline
+    run_full_pipeline(
+        input_csv=sensors_csv,
+        tank_info_csv=tank_info_csv,
+        output_csv=output_csv,
+        project_name="AquariumAdventures"
+    )
