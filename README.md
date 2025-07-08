@@ -33,7 +33,7 @@ To develop this project we started with the UML diagrams:
 
 3. **Generate example data**:
     ```bash
-     python generate_data.py
+     python data_generator.py
     ```
 
 4. Run the pipeline with pyinstrument for profiling:
