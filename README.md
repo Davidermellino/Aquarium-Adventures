@@ -1,6 +1,6 @@
 # 🐟Aquarium-Adventures
 
-Welcome to Aquarium-Adventures! This project is designed to help you analyze and visualize aquarium data using Python. It includes a pipeline for processing data, a base class for analysis, and various utilities for handling data.
+Welcome to Aquarium-Adventures! This project is designed to help you analyze and visualize aquarium data using Python. It includes a pipeline for processing data, whitch call the class that transform the data and a class that compute the stress function.
 
 To develop this project we started with the UML diagrams: 
 
