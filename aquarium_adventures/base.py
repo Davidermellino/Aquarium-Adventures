@@ -8,7 +8,11 @@ class BaseAquariumAnalyzer(ABC):
         """
         Analyze the aquarium data and return a DataFrame with the results.
 
-        :param data: A Polars DataFrame containing aquarium data.
-        :return: A Polars DataFrame with the analysis results.
+
+        Args:
+            data (pl.DataFrame): The input aquarium data to analyze.
+        Returns:
+            pl.DataFrame: A DataFrame containing the analysis results.
+
         """
         pass

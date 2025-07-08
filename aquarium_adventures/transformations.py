@@ -12,6 +12,12 @@ class AquariumTransformer(BaseAquariumAnalyzer):
     def analyze_data(self, sensors_df: pl.DataFrame) -> pl.DataFrame:
         """
         Analyzes the sensor data and adds various calculated columns.
+
+        Args:
+            sensors_df (pl.DataFrame): The input sensor data DataFrame.
+        Returns:
+            pl.DataFrame: A DataFrame with additional calculated columns.
+
         """
 
         transformations = [
@@ -24,11 +30,13 @@ class AquariumTransformer(BaseAquariumAnalyzer):
         results = joblib.Parallel(n_jobs=3)(
             joblib.delayed(transformation)(sensors_df)
             for transformation in transformations
-)
+        )
 
         # Extract only new columns from each transformation result
         results = [
-            result.select([col for col in result.columns if col not in sensors_df.columns])
+            result.select(
+                [col for col in result.columns if col not in sensors_df.columns]
+            )
             for result in results
         ]
 
@@ -43,6 +51,11 @@ class AquariumTransformer(BaseAquariumAnalyzer):
     def add_num_readings_per_tank(self, sensors_df: pl.DataFrame) -> pl.DataFrame:
         """
         Adds a column with the number of readings per tank.
+
+        Args: sensors_df (pl.DataFrame): The input sensor data DataFrame.
+        Returns:
+            pl.DataFrame: A DataFrame with an additional column for the number of readings per tank
+
         """
         tank_num_readings_table = sensors_df.group_by("tank_id").agg(
             pl.len().alias("tank_num_readings")
@@ -52,6 +65,10 @@ class AquariumTransformer(BaseAquariumAnalyzer):
     def add_avg_ph_per_tank(self, sensors_df: pl.DataFrame) -> pl.DataFrame:
         """
         Calculates the average pH per tank and adds it to the DataFrame
+
+        Args:  sensors_df (pl.DataFrame): The input sensor data DataFrame.
+        Returns:
+            pl.DataFrame: A DataFrame with an additional column for the average pH per tank
         """
         avg_ph = sensors_df.group_by("tank_id").agg(
             pl.col("pH").mean().alias("avg_pH_per_tank")
@@ -61,6 +78,10 @@ class AquariumTransformer(BaseAquariumAnalyzer):
     def add_temperature_deviation(self, sensors_df: pl.DataFrame) -> pl.DataFrame:
         """
         Adds a column with the temperature deviation from the standard temperature.
+
+        Args:            sensors_df (pl.DataFrame): The input sensor data DataFrame.
+        Returns:
+            pl.DataFrame: A DataFrame with an additional column for the temperature deviation.
         """
 
         if "quantity_liters" in sensors_df.columns:
@@ -84,6 +105,11 @@ class AquariumTransformer(BaseAquariumAnalyzer):
     ) -> pl.DataFrame:
         """
         Adds a column with the number of readings per fish species.
+
+        Args:
+            sensors_df (pl.DataFrame): The input sensor data DataFrame.
+        Returns:
+            pl.DataFrame: A DataFrame with an additional column for the number of readings per fish species.
         """
         # Check if tank_info data exists and has fish_species column
         if self.tank_info_df_fish_species_split is None:
