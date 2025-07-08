@@ -31,9 +31,12 @@ To develop this project we started with the UML diagrams:
     conda activate aquarium-adventures
    ```
 
+3. **Generate example data**:
+    ```bash
+     python generate_data.py
+    ```
 
-
-3. Run the pipeline with pyinstrument for profiling, the example data have been generated with the `generate_data.py` script:
+4. Run the pipeline with pyinstrument for profiling:
    ```bash
     pyinstrument -m aquarium_adventures.main
    ```
