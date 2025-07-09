@@ -37,4 +37,4 @@ class AquariumPipeline:
         """
 
         wandb.init(project=self.project_name)
-        wandb.log({"stress_score": df["stress_score"]})
+        wandb.log({"stress_score": df["stress_score"][0]})
